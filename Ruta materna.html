@@ -1,0 +1,1003 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Ruta Materna</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito+Sans:wght@400;600;800&display=swap">
+<style>
+/* Layout: lienzo 3D a pantalla completa, HUD en pastillas arriba, preguntas en tarjeta central */
+:root {
+  --ink: #1d2340;
+  --paper: #fffaf0;
+  --rose: #e8466a;
+  --mint: #23a98f;
+  --sun: #ffc43d;
+  --sky: #7cc8ff;
+  --muted: #5b6285;
+  --f-display: 'Fredoka', 'Trebuchet MS', system-ui, sans-serif;
+  --f-body: 'Nunito Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color-scheme: light;
+}
+html, body { height: 100%; }
+body {
+  margin: 0; overflow: hidden; background: linear-gradient(#8fd3ff, #d9f0ff);
+  color: var(--ink); font-family: var(--f-body); font-size: 16px; -webkit-user-select: none; user-select: none;
+  touch-action: none;
+}
+#app { position: relative; width: 100%; height: 100%; overflow: hidden; }
+#c { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+button { font-family: inherit; color: inherit; }
+button:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
+
+/* HUD */
+#hud { position: absolute; top: 0; left: 0; right: 0; padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 8px; pointer-events: none; }
+.pill {
+  display: inline-flex; align-items: center; gap: 8px; background: var(--paper);
+  border: 3px solid var(--ink); border-radius: 999px; padding: 4px 14px; min-height: 34px;
+  box-shadow: 0 3px 0 var(--ink); font-family: var(--f-display); font-weight: 600; font-size: 17px; line-height: 1;
+}
+.pill.world { flex-direction: column; align-items: flex-start; gap: 2px; border-radius: 18px; padding: 6px 14px; }
+.wname { font-size: 17px; }
+.wtopic { font-family: var(--f-body); font-weight: 800; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.pill.btn { pointer-events: auto; cursor: pointer; font-size: 14px; }
+.heart { width: 22px; height: 22px; }
+.heart.off { opacity: .22; filter: grayscale(1); }
+.pip { width: 14px; height: 14px; border-radius: 50%; border: 3px solid var(--ink); background: #fff; display: inline-block; }
+.pip.ok { background: var(--mint); }
+.pip.bad { background: var(--rose); }
+.num { font-variant-numeric: tabular-nums; }
+#toast {
+  position: absolute; left: 50%; top: 96px; transform: translateX(-50%); max-width: min(560px, calc(100% - 32px));
+  background: var(--ink); color: #fff; border-radius: 14px; padding: 10px 16px; font-weight: 800; text-align: center;
+  opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 5;
+}
+#toast.on { opacity: 1; }
+
+/* Controles táctiles */
+#touch { position: absolute; inset: auto 0 0 0; height: 40%; pointer-events: none; }
+#stick { position: absolute; left: 22px; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); width: 128px; height: 128px; border-radius: 50%;
+  background: rgba(255,250,240,.45); border: 3px solid var(--ink); pointer-events: auto; }
+#knob { position: absolute; left: 36px; top: 36px; width: 56px; height: 56px; border-radius: 50%; background: var(--paper); border: 3px solid var(--ink); box-shadow: 0 3px 0 var(--ink); }
+#jump { position: absolute; right: 22px; bottom: calc(34px + env(safe-area-inset-bottom, 0px)); width: 92px; height: 92px; border-radius: 50%;
+  background: var(--rose); border: 4px solid var(--ink); box-shadow: 0 5px 0 var(--ink); color: #fff; font-family: var(--f-display); font-weight: 700; font-size: 18px; pointer-events: auto; }
+#jump:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink); }
+
+/* Pantallas */
+.screen { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(29,35,64,.55); z-index: 10; overflow-y: auto; touch-action: pan-y; }
+.screen[hidden] { display: none; }
+.card {
+  background: var(--paper); border: 4px solid var(--ink); border-radius: 22px; box-shadow: 0 8px 0 var(--ink);
+  width: 100%; max-width: 640px; padding: 22px 22px 20px; margin: auto; min-width: 0; -webkit-user-select: text; user-select: text;
+}
+.card h1, .card h2 { font-family: var(--f-display); margin: 0; line-height: 1.05; text-wrap: balance; }
+.card h1 { font-size: clamp(34px, 8vw, 52px); color: var(--rose); letter-spacing: .01em; }
+.card h2 { font-size: clamp(26px, 6vw, 34px); }
+.kicker { font-weight: 800; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+.card p { line-height: 1.5; margin: 10px 0 0; }
+.small { font-size: 13px; color: var(--muted); }
+.worlds { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin: 16px 0 4px; padding: 0; list-style: none; }
+.worlds li { border: 3px solid var(--ink); border-radius: 14px; padding: 8px 10px; font-family: var(--f-display); font-weight: 600; font-size: 15px; line-height: 1.15; }
+.worlds li span { display: block; font-family: var(--f-body); font-weight: 600; font-size: 12px; color: rgba(29,35,64,.75); margin-top: 3px; }
+.keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 14px 0 0; font-size: 14px; }
+.keys dt { font-weight: 800; font-family: var(--f-display); }
+.keys dd { margin: 0; }
+.go {
+  margin-top: 18px; width: 100%; background: var(--rose); color: #fff; border: 4px solid var(--ink); border-radius: 16px; padding: 12px 18px;
+  font-family: var(--f-display); font-weight: 700; font-size: 22px; box-shadow: 0 5px 0 var(--ink); cursor: pointer;
+}
+.go:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink); }
+.go.alt { background: var(--sun); color: var(--ink); }
+
+/* Tarjeta de pregunta */
+#qscreen { background: rgba(29,35,64,.4); }
+.qhead { display: flex; justify-content: space-between; gap: 10px; align-items: center; margin: -22px -22px 14px; padding: 10px 22px; border-radius: 17px 17px 0 0; border-bottom: 4px solid var(--ink); color: #fff; font-family: var(--f-display); font-weight: 600; }
+.qhead small { font-family: var(--f-body); font-weight: 800; letter-spacing: .08em; text-transform: uppercase; font-size: 11px; opacity: .95; }
+#qtext { font-family: var(--f-display); font-weight: 500; font-size: clamp(19px, 4.6vw, 24px); line-height: 1.25; margin: 0 0 14px; text-wrap: pretty; }
+#opts { display: grid; gap: 10px; grid-template-columns: 1fr; }
+.opt {
+  display: flex; gap: 12px; align-items: flex-start; text-align: left; width: 100%; background: #fff; border: 3px solid var(--ink); border-radius: 14px;
+  padding: 10px 12px; font-size: 16px; line-height: 1.3; font-weight: 600; cursor: pointer; box-shadow: 0 3px 0 var(--ink); min-width: 0;
+}
+.opt .l { flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--ink); color: #fff; display: grid; place-items: center; font-family: var(--f-display); font-size: 15px; }
+.opt .t { min-width: 0; overflow-wrap: anywhere; padding-top: 3px; }
+.opt:hover:not(:disabled) { background: #fff3cf; }
+.opt:disabled { cursor: default; }
+.opt.right { background: #c8f2e6; border-color: #0f6f5c; }
+.opt.right .l { background: #0f6f5c; }
+.opt.wrong { background: #ffd3dc; border-color: #a3223f; }
+.opt.wrong .l { background: #a3223f; }
+.opt.dim { opacity: .55; }
+#expl { margin-top: 14px; padding: 12px 14px; border-radius: 14px; border: 3px solid var(--ink); line-height: 1.45; font-size: 15px; }
+#expl b { font-family: var(--f-display); font-size: 18px; display: block; margin-bottom: 4px; }
+#expl.ok { background: #d9f6ec; }
+#expl.no { background: #ffe1e7; }
+
+.stats { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 0; }
+.stat-box { flex: 1 1 110px; border: 3px solid var(--ink); border-radius: 14px; padding: 8px 10px; background: #fff; }
+.stat-box b { display: block; font-family: var(--f-display); font-size: 26px; font-variant-numeric: tabular-nums; }
+.stat-box span { font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.review { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; max-height: 38vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.review li { border: 3px solid var(--ink); border-radius: 12px; padding: 8px 10px; background: #fff; font-size: 14px; line-height: 1.4; }
+.review li b { display: block; margin-bottom: 3px; }
+@media (max-width: 520px) {
+  .pill { font-size: 15px; padding: 3px 11px; }
+  .card { padding: 18px 16px 16px; }
+  .qhead { margin: -18px -16px 12px; padding: 9px 16px; }
+  #toast { top: 120px; }
+}
+@media (prefers-reduced-motion: reduce) { #toast { transition: none; } }
+</style>
+
+<div id="app">
+  <canvas id="c" aria-label="Escenario 3D del juego"></canvas>
+
+  <div id="hud" hidden>
+    <div class="pill" id="hearts" aria-label="Vidas"></div>
+    <div class="pill world"><span class="wname" id="wname"></span><span class="wtopic" id="wtopic"></span></div>
+    <div class="pill" id="pips" aria-label="Preguntas del mundo"></div>
+    <div class="pill num"><span>Monedas</span><b id="coins">0</b></div>
+    <div class="pill num"><b id="score">0</b><span>pts</span></div>
+    <button class="pill btn" id="mute" type="button">Sonido: sí</button>
+  </div>
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <div id="touch" hidden>
+    <div id="stick"><div id="knob"></div></div>
+    <button id="jump" type="button">SALTAR</button>
+  </div>
+
+  <div class="screen" id="start">
+    <div class="card">
+      <p class="kicker">Simulador educativo · 1 jugador</p>
+      <h1>Ruta Materna</h1>
+      <p>Recorre cuatro paisajes en 3D, esquiva gérmenes, junta monedas y golpea los bloques <b>?</b>. Cada bloque lanza una pregunta de emergencia obstétrica. Responde bien para avanzar con seguridad, porque cada error cuesta un corazón.</p>
+      <ul class="worlds">
+        <li style="background:#d7f3c9">Valle Verde<span>Hemorragia posparto</span></li>
+        <li style="background:#ffe7ae">Desierto Dorado<span>Preeclampsia y eclampsia</span></li>
+        <li style="background:#dcefff">Cumbre Nevada<span>Complicaciones del parto</span></li>
+        <li style="background:#ffd0c0">Volcán Ardiente<span>Hemorragia anteparto y otras</span></li>
+      </ul>
+      <dl class="keys">
+        <dt>Mover</dt><dd>Flechas o WASD. En el celular, la palanca de la izquierda.</dd>
+        <dt>Saltar</dt><dd>Barra espaciadora o botón SALTAR. Cae sobre un germen para vencerlo.</dd>
+        <dt>Cámara</dt><dd>Q y E, o arrastra sobre la pantalla.</dd>
+        <dt>Responder</dt><dd>Clic, toque o teclas 1 a 4.</dd>
+      </dl>
+      <button class="go" id="btnStart" type="button">Comenzar la ruta</button>
+      <p class="small">Material de estudio. Las dosis y conductas son una guía general; en la práctica clínica sigue siempre el protocolo vigente de tu institución.</p>
+    </div>
+  </div>
+
+  <div class="screen" id="qscreen" hidden>
+    <div class="card" id="qcard">
+      <div class="qhead" id="qhead"><span id="qnum"></span><small id="qtopic"></small></div>
+      <p id="qtext"></p>
+      <div id="opts"></div>
+      <div id="expl" hidden></div>
+      <button class="go alt" id="btnNext" type="button" hidden>Continuar</button>
+    </div>
+  </div>
+
+  <div class="screen" id="wscreen" hidden>
+    <div class="card">
+      <p class="kicker" id="wsKicker"></p>
+      <h2 id="wsTitle"></h2>
+      <div class="stats" id="wsStats"></div>
+      <ul class="review" id="wsReview"></ul>
+      <button class="go" id="btnWNext" type="button"></button>
+    </div>
+  </div>
+
+  <div class="screen" id="gscreen" hidden>
+    <div class="card">
+      <p class="kicker">Reanimación fallida</p>
+      <h2>Te quedaste sin corazones</h2>
+      <p>La paciente necesita a su equipo completo. Repasa la explicación de las preguntas y vuelve a intentar el mundo.</p>
+      <button class="go" id="btnRetry" type="button">Reintentar este mundo</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ===== Datos: mundos y preguntas ===== */
+const WORLDS = [
+  { name: 'Valle Verde', topic: 'Hemorragia posparto', color: '#2f9e44', seed: 11,
+    sky: 0x8fd3ff, fog: 0xc6e9ff, top: 0x5cc24a, earth: 0x8a5a3b, ground: 0x4aa83c, decor: 'trees', sun: 0xfff2cc },
+  { name: 'Desierto Dorado', topic: 'Preeclampsia y eclampsia', color: '#c9772b', seed: 23,
+    sky: 0xffd49a, fog: 0xffe5bd, top: 0xe9c46a, earth: 0xc98a4b, ground: 0xe6bd72, decor: 'cacti', sun: 0xfff0c2 },
+  { name: 'Cumbre Nevada', topic: 'Complicaciones del parto', color: '#3b82c4', seed: 37,
+    sky: 0xbfe0ff, fog: 0xe6f2ff, top: 0xf6fbff, earth: 0x8fb6d9, ground: 0xeaf4ff, decor: 'pines', sun: 0xffffff },
+  { name: 'Volcán Ardiente', topic: 'Hemorragia anteparto y otras', color: '#c2410c', seed: 51,
+    sky: 0x3a1c2e, fog: 0x5a2430, top: 0x7a7280, earth: 0x3b2f3a, ground: 0xff5a1f, decor: 'rocks', sun: 0xffb27a }
+];
+
+/* q: enunciado, o: 4 opciones, a: índice correcto, e: explicación */
+const QUESTIONS = [
+  [ /* Mundo 1: hemorragia posparto */
+    { q: 'Una puérpera sangra abundante tras el parto vaginal. Según la OMS, ¿qué pérdida en 24 horas define la hemorragia posparto?',
+      o: ['≥ 200 ml', '≥ 500 ml', '≥ 800 ml', '≥ 1 500 ml'], a: 1,
+      e: 'La OMS define hemorragia posparto como una pérdida de 500 ml o más en 24 horas. Una pérdida de 1 000 ml o más se considera hemorragia severa.' },
+    { q: '¿Cuál es la causa más frecuente de hemorragia posparto?',
+      o: ['Atonía uterina', 'Desgarros del canal del parto', 'Retención de restos placentarios', 'Coagulopatía'], a: 0,
+      e: 'La atonía uterina explica cerca del 70 % de los casos. Recuerda las 4 T: Tono, Trauma, Tejido y Trombina.' },
+    { q: 'El útero está blando, sin globo de seguridad, y el sangrado es profuso. ¿Qué haces primero?',
+      o: ['Masaje uterino y oxitocina, pidiendo ayuda', 'Histerectomía inmediata', 'Observar 30 minutos', 'Colocar una sonda y dar de alta'], a: 0,
+      e: 'Se inicia masaje uterino, se vacía la vejiga, se administra oxitocina, se canalizan dos vías y se activa al equipo de emergencia obstétrica (Clave Roja).' },
+    { q: 'El útero está bien contraído, pero el sangrado rojo vivo continúa. ¿Qué causa debes buscar?',
+      o: ['Atonía uterina', 'Trauma del canal del parto (desgarros)', 'Preeclampsia', 'Mastitis'], a: 1,
+      e: 'Útero contraído con sangrado persistente sugiere trauma: desgarros cervicales, vaginales o perineales. Se revisa el canal con buena luz y se repara.' },
+    { q: '¿Qué antifibrinolítico recomienda la OMS en el tratamiento de la hemorragia posparto?',
+      o: ['Ácido tranexámico 1 g IV', 'Heparina', 'Furosemida', 'Hierro endovenoso'], a: 0,
+      e: 'Ácido tranexámico 1 g IV en 10 minutos, idealmente dentro de las 3 horas del parto. Puede repetirse una dosis si el sangrado continúa tras 30 minutos.' },
+    { q: 'La atonía no responde a los uterotónicos. ¿Qué medida mecánica puede conservar el útero antes de la cirugía mayor?',
+      o: ['Balón de taponamiento intrauterino', 'Pesario vaginal', 'Cerclaje cervical', 'Hielo sobre el abdomen'], a: 0,
+      e: 'El balón intrauterino (por ejemplo, Bakri) es una medida eficaz mientras se prepara el traslado. Si falla, siguen las suturas compresivas, la ligadura arterial o la histerectomía.' }
+  ],
+  [ /* Mundo 2: preeclampsia / eclampsia */
+    { q: '¿Qué cifras de presión arterial indican criterio de severidad en la preeclampsia?',
+      o: ['PA ≥ 140/90 mmHg', 'PA ≥ 160/110 mmHg', 'PA ≥ 120/80 mmHg', 'PA ≥ 180/130 mmHg'], a: 1,
+      e: 'Una presión sistólica de 160 o más, o diastólica de 110 o más, confirmada en un intervalo corto, marca severidad. También la marca el daño de órgano blanco.' },
+    { q: 'Gestante de 34 semanas con cefalea intensa, escotomas y dolor epigástrico. ¿Qué debes sospechar?',
+      o: ['Preeclampsia severa o síndrome HELLP', 'Migraña común', 'Gastritis', 'Colestasis intrahepática'], a: 0,
+      e: 'Cefalea persistente, alteraciones visuales y dolor en epigastrio o hipocondrio derecho son signos de severidad. HELLP es hemólisis, enzimas hepáticas elevadas y plaquetas bajas.' },
+    { q: 'Una gestante hipertensa presenta una convulsión tónico-clónica. ¿Qué fármaco es de elección para tratarla y prevenir nuevas crisis?',
+      o: ['Sulfato de magnesio', 'Diazepam como primera línea', 'Fenitoína', 'Nifedipino'], a: 0,
+      e: 'El sulfato de magnesio es el anticonvulsivante de elección en eclampsia, superior a diazepam y fenitoína. Esquema habitual: carga de 4 g IV en 15 a 20 minutos y mantenimiento de 1 g por hora.' },
+    { q: '¿Cuál es la primera acción durante una crisis eclámptica activa?',
+      o: ['Proteger la vía aérea, decúbito lateral izquierdo y oxígeno', 'Introducir un objeto en la boca', 'Inducir el parto sin estabilizar', 'Administrar un diurético'], a: 0,
+      e: 'La prioridad es el ABC: evitar lesiones, vía aérea, decúbito lateral izquierdo, oxígeno y sulfato de magnesio. El parto se planifica cuando la madre esté estabilizada.' },
+    { q: '¿Cuál es el primer signo clínico de toxicidad por sulfato de magnesio?',
+      o: ['Pérdida del reflejo rotuliano', 'Fiebre', 'Taquicardia', 'Poliuria'], a: 0,
+      e: 'Primero desaparecen los reflejos osteotendinosos; después aparecen depresión respiratoria y paro. Se vigilan reflejos, frecuencia respiratoria (más de 12 por minuto) y diuresis (más de 30 ml por hora).' },
+    { q: '¿Cuál es el antídoto de la intoxicación por sulfato de magnesio?',
+      o: ['Gluconato de calcio IV', 'Naloxona', 'Flumazenil', 'Atropina'], a: 0,
+      e: 'Gluconato de calcio al 10 % (1 g, es decir 10 ml) por vía IV lenta, junto con soporte ventilatorio si hay depresión respiratoria.' }
+  ],
+  [ /* Mundo 3: complicaciones del parto */
+    { q: 'Sale la cabeza fetal, se retrae contra el periné (signo de la tortuga) y el hombro anterior no sale. ¿Qué emergencia es?',
+      o: ['Distocia de hombros', 'Prolapso de cordón', 'Rotura uterina', 'Inversión uterina'], a: 0,
+      e: 'Es distocia de hombros. Se pide ayuda, se anota la hora y se aplican maniobras escalonadas. No se tracciona la cabeza con fuerza ni se hace presión sobre el fondo uterino.' },
+    { q: '¿Cuál es la primera maniobra en la distocia de hombros?',
+      o: ['McRoberts, con o sin presión suprapúbica', 'Presión fuerte sobre el fondo uterino', 'Tracción vigorosa de la cabeza', 'Cesárea inmediata sin maniobras'], a: 0,
+      e: 'McRoberts (flexión e hiperabducción de los muslos) más presión suprapúbica resuelve la mayoría de los casos. Si falla: Rubin o Woods, extracción del brazo posterior o posición de Gaskin.' },
+    { q: 'Tras romper membranas se palpa el cordón pulsátil en la vagina. ¿Qué haces?',
+      o: ['Genupectoral o Trendelenburg, elevar la presentación con la mano y cesárea urgente', 'Posición de litotomía y pujos', 'Pedir que camine para acelerar el parto', 'Esperar el parto vaginal'], a: 0,
+      e: 'En el prolapso de cordón se eleva la presentación manualmente para evitar la compresión, se manipula lo menos posible el cordón y se programa una cesárea de emergencia.' },
+    { q: '¿Cuál es el principal factor de riesgo de rotura uterina?',
+      o: ['Cicatriz uterina previa (cesárea)', 'Primigesta joven', 'Anemia leve', 'Talla baja'], a: 0,
+      e: 'La cicatriz uterina previa es el factor más importante. Sospecha ante dolor intenso, cese de contracciones, sangrado y bradicardia fetal; requiere laparotomía urgente.' },
+    { q: 'Tras el alumbramiento aparece una masa que protruye por la vagina, con dolor intenso y shock. ¿Qué sospechas?',
+      o: ['Inversión uterina', 'Prolapso de cordón', 'Embarazo ectópico', 'Placenta previa'], a: 0,
+      e: 'Es inversión uterina. Se repone el útero cuanto antes (maniobra de Johnson), se suspende la oxitocina y no se tracciona la placenta. Se trata también el shock.' },
+    { q: 'En el trabajo de parto hay bradicardia fetal persistente. ¿Qué haces como medida inicial?',
+      o: ['Decúbito lateral, suspender oxitocina y buscar la causa', 'Aumentar la dosis de oxitocina', 'Retirar el monitor fetal', 'Dar analgesia y esperar'], a: 0,
+      e: 'Reanimación intrauterina: cambiar de posición, suspender oxitocina, corregir la hipotensión y buscar causas como compresión de cordón o hiperdinamia. Si no mejora, se decide un parto urgente.' }
+  ],
+  [ /* Mundo 4: hemorragia anteparto y otras */
+    { q: 'Sangrado vaginal rojo brillante e indoloro a las 33 semanas. ¿Qué diagnóstico y conducta corresponden?',
+      o: ['Placenta previa; ecografía y evitar el tacto vaginal', 'Desprendimiento; tacto vaginal inmediato', 'Rotura uterina; observar en casa', 'Amenaza de aborto; alta'], a: 0,
+      e: 'La placenta previa causa sangrado indoloro. No se hace tacto vaginal hasta descartarla por ecografía, porque puede provocar una hemorragia masiva.' },
+    { q: 'Sangrado oscuro, dolor abdominal constante, útero hipertónico y presión alta. ¿Qué sospechas?',
+      o: ['Desprendimiento prematuro de placenta', 'Placenta previa', 'Vasa previa', 'Cervicitis'], a: 0,
+      e: 'El desprendimiento prematuro de placenta cursa con dolor, hipertonía y sangrado, a veces oculto. Hay riesgo de coagulación intravascular y muerte fetal. Se asocia a hipertensión, trauma y cocaína.' },
+    { q: 'En pleno parto, una mujer presenta disnea súbita, hipotensión y cianosis, y luego sangra por coagulopatía. ¿Qué diagnóstico encaja?',
+      o: ['Embolia de líquido amniótico', 'Preeclampsia leve', 'Mastitis', 'Hipoglucemia'], a: 0,
+      e: 'La embolia de líquido amniótico causa colapso cardiorrespiratorio súbito y coagulopatía. El tratamiento es de soporte: reanimación, oxígeno, reposición de hemoderivados y atención del parto.' },
+    { q: 'Mujer con amenorrea, dolor pélvico súbito, hipotensión y líquido libre en la ecografía. ¿Qué diagnóstico encaja?',
+      o: ['Embarazo ectópico roto', 'Cólico renal', 'Quiste simple de ovario', 'Gastroenteritis'], a: 0,
+      e: 'Un ectópico roto, casi siempre tubárico, produce shock hemorrágico. Se estabiliza a la paciente y se opera de urgencia sin esperar controles seriados de hCG.' },
+    { q: 'Puérpera con fiebre, hipotensión, taquicardia y loquios fétidos. ¿Qué haces durante la primera hora?',
+      o: ['Cultivos, antibióticos IV de amplio espectro y reposición de líquidos', 'Solo paracetamol y observación', 'Alta con control en una semana', 'Suspender la lactancia y esperar'], a: 0,
+      e: 'Sospecha de sepsis puerperal: antibióticos de amplio espectro en la primera hora, toma de cultivos, reanimación con cristaloides y control del foco, por ejemplo endometritis o restos.' },
+    { q: '¿Qué signo avisa de un shock hemorrágico antes de que caiga la presión arterial?',
+      o: ['Taquicardia, piel fría y llenado capilar lento', 'Bradicardia', 'Hipertermia', 'Piel caliente y enrojecida'], a: 0,
+      e: 'En una gestante sana la presión se sostiene hasta perder un 25 a 30 % de la volemia. Taquicardia, frialdad y oliguria avisan antes. Un índice de choque (FC dividida entre PAS) mayor de 0,9 es alarma.' }
+  ]
+];
+const WORLD_COUNT = WORLDS.length;
+
+/* ===== Núcleo: escena, audio, entrada, modelos, HUD ===== */
+const $ = id => document.getElementById(id);
+const canvas = $('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 500);
+const hemi = new THREE.HemisphereLight(0xffffff, 0x8899aa, 0.85);
+const sunLight = new THREE.DirectionalLight(0xffffff, 0.9);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.set(1024, 1024);
+Object.assign(sunLight.shadow.camera, { left: -24, right: 24, top: 24, bottom: -24, near: 1, far: 90 });
+sunLight.shadow.bias = -0.0004;
+scene.add(hemi, sunLight, sunLight.target);
+
+function resize() {
+  const w = $('app').clientWidth || window.innerWidth, h = $('app').clientHeight || window.innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.fov = w / h < 0.8 ? 68 : 55;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+if (window.ResizeObserver) new ResizeObserver(resize).observe($('app'));
+resize();
+
+/* ---------- Audio ---------- */
+let actx = null, muted = false;
+function tone(freq, dur, type, vol, slideTo, delay) {
+  if (muted) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === 'suspended') actx.resume();
+    const t = actx.currentTime + (delay || 0);
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type || 'sine';
+    o.frequency.setValueAtTime(freq, t);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+    g.gain.setValueAtTime(vol || 0.1, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(g); g.connect(actx.destination);
+    o.start(t); o.stop(t + dur + 0.03);
+  } catch (e) { /* sin audio */ }
+}
+const sfx = {
+  jump: () => tone(320, 0.16, 'square', 0.06, 720),
+  coin: () => { tone(988, 0.08, 'square', 0.05); tone(1319, 0.18, 'square', 0.05, null, 0.07); },
+  stomp: () => tone(220, 0.14, 'square', 0.08, 90),
+  hurt: () => tone(260, 0.35, 'sawtooth', 0.08, 70),
+  block: () => tone(150, 0.12, 'square', 0.08, 300),
+  heart: () => { tone(660, 0.1, 'sine', 0.08); tone(880, 0.2, 'sine', 0.08, null, 0.1); },
+  good: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.16, 'triangle', 0.1, null, i * 0.09)),
+  bad: () => { tone(200, 0.25, 'sawtooth', 0.08, 120); tone(150, 0.35, 'sawtooth', 0.08, 80, 0.2); },
+  win: () => [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, 0.2, 'triangle', 0.1, null, i * 0.11))
+};
+$('mute').addEventListener('click', () => { muted = !muted; $('mute').textContent = 'Sonido: ' + (muted ? 'no' : 'sí'); });
+
+/* ---------- Entrada ---------- */
+const keys = {};
+const stick = { x: 0, y: 0 };
+const jumpState = { held: false, buffer: 0 };
+let camYaw = 0;
+let gameState = 'menu'; // menu | play | question | world | over
+let questionKeyHandler = null;
+
+function jumpPress() { jumpState.held = true; jumpState.buffer = 0.14; }
+function jumpRelease() { jumpState.held = false; }
+window.addEventListener('keydown', e => {
+  if (questionKeyHandler && questionKeyHandler(e)) return;
+  keys[e.code] = true;
+  if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
+  if ((e.code === 'Space' || e.code === 'KeyZ') && !e.repeat) jumpPress();
+});
+window.addEventListener('keyup', e => {
+  keys[e.code] = false;
+  if (e.code === 'Space' || e.code === 'KeyZ') jumpRelease();
+});
+window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; jumpRelease(); });
+
+(function bindTouch() {
+  const st = $('stick'), kn = $('knob');
+  let sid = null, cx = 0, cy = 0;
+  const R = 46;
+  function upd(e) {
+    let dx = e.clientX - cx, dy = e.clientY - cy;
+    const len = Math.hypot(dx, dy);
+    if (len > R) { dx = dx / len * R; dy = dy / len * R; }
+    kn.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+    stick.x = dx / R; stick.y = dy / R;
+  }
+  st.addEventListener('pointerdown', e => {
+    sid = e.pointerId; st.setPointerCapture(sid);
+    const r = st.getBoundingClientRect(); cx = r.left + r.width / 2; cy = r.top + r.height / 2; upd(e);
+  });
+  st.addEventListener('pointermove', e => { if (e.pointerId === sid) upd(e); });
+  const end = e => { if (e.pointerId === sid) { sid = null; stick.x = 0; stick.y = 0; kn.style.transform = ''; } };
+  st.addEventListener('pointerup', end); st.addEventListener('pointercancel', end);
+  const jb = $('jump');
+  jb.addEventListener('pointerdown', e => { e.preventDefault(); jb.setPointerCapture(e.pointerId); jumpPress(); });
+  jb.addEventListener('pointerup', jumpRelease); jb.addEventListener('pointercancel', jumpRelease);
+  // Cámara: arrastrar sobre el escenario
+  let cid = null, lastX = 0;
+  canvas.addEventListener('pointerdown', e => { if (gameState !== 'play') return; cid = e.pointerId; lastX = e.clientX; canvas.setPointerCapture(cid); });
+  canvas.addEventListener('pointermove', e => { if (e.pointerId !== cid) return; camYaw -= (e.clientX - lastX) * 0.006; lastX = e.clientX; });
+  const cend = e => { if (e.pointerId === cid) cid = null; };
+  canvas.addEventListener('pointerup', cend); canvas.addEventListener('pointercancel', cend);
+  const touchy = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  window.__touchUI = touchy || ('ontouchstart' in window);
+})();
+
+/* ---------- Modelos ---------- */
+const matCache = {};
+function mat(color, extra) {
+  const key = color + JSON.stringify(extra || {});
+  return matCache[key] || (matCache[key] = new THREE.MeshLambertMaterial(Object.assign({ color }, extra || {})));
+}
+function mesh(geo, color, extra) {
+  const m = new THREE.Mesh(geo, mat(color, extra));
+  m.castShadow = true; m.receiveShadow = true;
+  return m;
+}
+function limb(w, h, d, color, y) { const g = new THREE.Group(); const m = mesh(new THREE.BoxGeometry(w, h, d), color); m.position.y = y; g.add(m); return g; }
+
+function makePlayer() {
+  const g = new THREE.Group();
+  const skin = 0xf2c29b, scrubs = 0x2aa7c9, white = 0xffffff, red = 0xe8466a;
+  const body = mesh(new THREE.CylinderGeometry(0.36, 0.44, 0.72, 14), scrubs); body.position.y = 0.78; g.add(body);
+  const head = mesh(new THREE.SphereGeometry(0.4, 18, 14), skin); head.position.y = 1.38; g.add(head);
+  const cap = mesh(new THREE.SphereGeometry(0.43, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), white); cap.position.y = 1.42; g.add(cap);
+  const brim = mesh(new THREE.BoxGeometry(0.52, 0.06, 0.3), white); brim.position.set(0, 1.46, 0.4); g.add(brim);
+  const cA = mesh(new THREE.BoxGeometry(0.22, 0.06, 0.03), red); cA.position.set(0, 1.58, 0.405); g.add(cA);
+  const cB = mesh(new THREE.BoxGeometry(0.06, 0.22, 0.03), red); cB.position.set(0, 1.58, 0.405); g.add(cB);
+  [-0.14, 0.14].forEach(x => { const e = mesh(new THREE.SphereGeometry(0.055, 8, 8), 0x1d2340); e.position.set(x, 1.36, 0.37); g.add(e); });
+  const nose = mesh(new THREE.SphereGeometry(0.06, 8, 8), 0xe39a7a); nose.position.set(0, 1.28, 0.4); g.add(nose);
+  const steth = mesh(new THREE.TorusGeometry(0.3, 0.035, 8, 20), 0x2b2f45); steth.rotation.x = Math.PI / 2; steth.position.y = 1.08; g.add(steth);
+  const legL = limb(0.22, 0.42, 0.28, 0xf4f4f4, -0.21); legL.position.set(-0.17, 0.44, 0); g.add(legL);
+  const legR = limb(0.22, 0.42, 0.28, 0xf4f4f4, -0.21); legR.position.set(0.17, 0.44, 0); g.add(legR);
+  const armL = limb(0.16, 0.5, 0.16, scrubs, -0.22); armL.position.set(-0.5, 1.02, 0); g.add(armL);
+  const armR = limb(0.16, 0.5, 0.16, scrubs, -0.22); armR.position.set(0.5, 1.02, 0); g.add(armR);
+  return { group: g, legL, legR, armL, armR };
+}
+
+function makeEnemy() {
+  const g = new THREE.Group();
+  const body = mesh(new THREE.SphereGeometry(0.58, 16, 12), 0x7acb34); body.scale.y = 0.9; body.position.y = 0.62; g.add(body);
+  for (let i = 0; i < 10; i++) {
+    const a = i / 10 * Math.PI * 2, s = mesh(new THREE.ConeGeometry(0.1, 0.28, 6), 0x4f9a1f);
+    s.position.set(Math.cos(a) * 0.58, 0.62 + (i % 2 ? 0.18 : -0.12), Math.sin(a) * 0.58);
+    s.rotation.z = -Math.cos(a) * 1.3; s.rotation.x = Math.sin(a) * 1.3; g.add(s);
+  }
+  [-0.2, 0.2].forEach(x => {
+    const w = mesh(new THREE.SphereGeometry(0.15, 10, 10), 0xffffff); w.position.set(x, 0.78, 0.46); g.add(w);
+    const p = mesh(new THREE.SphereGeometry(0.07, 8, 8), 0x1d2340); p.position.set(x, 0.78, 0.59); g.add(p);
+    const b = mesh(new THREE.BoxGeometry(0.22, 0.05, 0.05), 0x1d2340); b.position.set(x, 0.97, 0.5); b.rotation.z = x > 0 ? 0.45 : -0.45; g.add(b);
+  });
+  return g;
+}
+
+const _qTex = {};
+function qTexture(used) {
+  const k = used ? 'u' : 'q';
+  if (_qTex[k]) return _qTex[k];
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const x = c.getContext('2d');
+  x.fillStyle = used ? '#9aa0b4' : '#ffc43d'; x.fillRect(0, 0, 128, 128);
+  x.strokeStyle = '#1d2340'; x.lineWidth = 8; x.strokeRect(4, 4, 120, 120);
+  x.fillStyle = '#1d2340';
+  [[16, 16], [112, 16], [16, 112], [112, 112]].forEach(p => { x.beginPath(); x.arc(p[0], p[1], 4, 0, 7); x.fill(); });
+  if (!used) {
+    x.font = 'bold 88px Fredoka, "Arial Black", sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.lineWidth = 9; x.strokeStyle = '#1d2340'; x.fillStyle = '#fffaf0';
+    x.strokeText('?', 64, 70); x.fillText('?', 64, 70);
+  }
+  return (_qTex[k] = new THREE.CanvasTexture(c));
+}
+function makeBlock() {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 1.2), new THREE.MeshLambertMaterial({ map: qTexture(false), emissive: 0x6b4500, emissiveIntensity: 0.35 }));
+  m.castShadow = true; return m;
+}
+function setBlockUsed(m) { m.material.map = qTexture(true); m.material.emissiveIntensity = 0; m.material.needsUpdate = true; }
+
+function makeCoin() {
+  const g = new THREE.Group();
+  const m = mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.09, 18), 0xffc43d, { emissive: 0x8a5a00, emissiveIntensity: 0.5 });
+  m.rotation.x = Math.PI / 2; g.add(m);
+  return g;
+}
+function makeHeartPickup() {
+  const s = new THREE.Shape();
+  s.moveTo(0, -0.5); s.bezierCurveTo(-0.9, 0.05, -0.55, 0.75, 0, 0.35); s.bezierCurveTo(0.55, 0.75, 0.9, 0.05, 0, -0.5);
+  const geo = new THREE.ExtrudeGeometry(s, { depth: 0.22, bevelEnabled: false });
+  geo.translate(0, 0, -0.11);
+  const g = new THREE.Group();
+  const m = mesh(geo, 0xe8466a, { emissive: 0x7a1030, emissiveIntensity: 0.5 }); m.scale.setScalar(0.9); g.add(m);
+  return g;
+}
+
+/* ---------- HUD ---------- */
+const HEART_SVG = on => '<svg class="heart' + (on ? '' : ' off') + '" viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 2.7 4.5 6.4 4.5c2.2 0 3.7 1.2 5.6 3.3 1.9-2.1 3.4-3.3 5.6-3.3 3.7 0 5.5 3.9 4 7.3C19.5 16.4 12 21 12 21z" fill="#e8466a" stroke="#1d2340" stroke-width="2" stroke-linejoin="round"/></svg>';
+const MAX_HEARTS = 3;
+function setHearts(n) { let s = ''; for (let i = 0; i < MAX_HEARTS; i++) s += HEART_SVG(i < n); $('hearts').innerHTML = s; $('hearts').setAttribute('aria-label', 'Vidas: ' + n + ' de ' + MAX_HEARTS); }
+function setPips(res, total) {
+  let s = '';
+  for (let i = 0; i < total; i++) s += '<span class="pip' + (res[i] === true ? ' ok' : res[i] === false ? ' bad' : '') + '"></span>';
+  $('pips').innerHTML = s;
+}
+let toastTimer = 0;
+function toast(msg, ms) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('on');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('on'), ms || 2400);
+}
+
+/* ===== Niveles: plataformas, objetos y paisaje ===== */
+function rng(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function disposeGroup(g) { g.traverse(o => { if (o.geometry) o.geometry.dispose(); }); }
+
+const SEG_TYPES = ['wide', 'small', 'Q', 'wide', 'mover', 'wide', 'Q', 'small', 'small', 'Q', 'wide', 'mover', 'Q', 'wide', 'small', 'Q', 'mover', 'wide', 'Q', 'wide'];
+let level = null;
+
+function buildLevel(wi) {
+  if (level) { scene.remove(level.group); disposeGroup(level.group); }
+  const W = WORLDS[wi], R = rng(W.seed * 7 + 3);
+  const group = new THREE.Group(); scene.add(group);
+  const L = { group, plats: [], movers: [], blocks: [], coins: [], hearts: [], enemies: [], goal: null, spawn: { x: 0, y: 0, z: 0 }, lava: null, clouds: [], qTotal: 0, endZ: 0 };
+  level = L;
+
+  scene.background = new THREE.Color(W.sky);
+  scene.fog = new THREE.Fog(W.fog, 45, 230);
+  sunLight.color.setHex(W.sun);
+  hemi.color.setHex(wi === 3 ? 0xffb89a : 0xffffff);
+  hemi.groundColor.setHex(wi === 3 ? 0x552244 : 0x8899aa);
+  hemi.intensity = wi === 3 ? 0.7 : 0.85;
+
+  function addPlat(x, topY, z, w, d, mover) {
+    const h = 3;
+    const p = { x, y: topY, z, w, d, h, mover: mover || null, ox: x, dx: 0, dy: 0, dz: 0 };
+    const g = new THREE.Group();
+    const body = mesh(new THREE.BoxGeometry(w, h, d), W.earth); body.position.y = -h / 2; g.add(body);
+    const topM = mesh(new THREE.BoxGeometry(w + 0.12, 0.38, d + 0.12), mover ? 0xff9a5c : W.top); topM.position.y = -0.17; g.add(topM);
+    if (wi === 3) { const glow = mesh(new THREE.BoxGeometry(w + 0.02, 0.12, d + 0.02), 0xff6a2a, { emissive: 0xff4a10, emissiveIntensity: 0.9 }); glow.position.y = -0.9; g.add(glow); }
+    g.position.set(x, topY, z); group.add(g); p.mesh = g;
+    L.plats.push(p); if (mover) L.movers.push(p);
+    return p;
+  }
+  function addCoin(x, y, z) { const m = makeCoin(); m.position.set(x, y, z); group.add(m); L.coins.push({ m, x, y, z, got: false }); }
+  function addHeart(x, y, z) { const m = makeHeartPickup(); m.position.set(x, y, z); group.add(m); L.hearts.push({ m, x, y, z, got: false }); }
+
+  let prev = addPlat(0, 0, 0, 10, 10);
+  prev.type = 'start';
+  let qi = 0;
+  for (let i = 0; i < SEG_TYPES.length; i++) {
+    const type = SEG_TYPES[i];
+    let w, d, gap;
+    if (type === 'wide') { w = 7 + R() * 2; d = 7 + R() * 2; gap = 1.5 + R() * 0.9; }
+    else if (type === 'small') { w = 3.2 + R() * 1; d = 3.2 + R() * 1; gap = 1.8 + R() * 1.2; }
+    else if (type === 'Q') { w = 5.5; d = 6; gap = 1.6 + R() * 1; }
+    else { w = 4.4; d = 3.4; gap = 1.8; }
+    const lat = Math.max(0, Math.min(3.2, (prev.w + w) / 2 - 1.8));
+    let dx = (R() * 2 - 1) * lat;
+    if (type === 'mover' || prev.type === 'mover') dx = (R() * 2 - 1) * 0.8;
+    let x = prev.ox + dx;
+    const z = prev.z - prev.d / 2 - gap - d / 2;
+    const opts = (type === 'small') ? [-0.8, 0, 0.6, 1.0] : [-1.0, 0, 0.6, 1.2];
+    let dy = opts[Math.floor(R() * opts.length)];
+    if (type === 'mover' || prev.type === 'mover') dy = 0;
+    const topY = Math.max(-1, Math.min(8, prev.y + dy));
+    const mv = type === 'mover' ? { amp: 2.4, speed: 0.85, phase: R() * 6 } : null;
+    const p = addPlat(x, topY, z, w, d, mv);
+    p.type = type;
+    // monedas sobre el hueco
+    if (type === 'small' || type === 'Q' || type === 'mover') {
+      const zMid = (prev.z - prev.d / 2 + z + d / 2) / 2, yy = Math.max(prev.y, topY) + 1.6;
+      addCoin(x * 0.5 + prev.ox * 0.5, yy + 0.5, zMid);
+    }
+    if (type === 'wide') {
+      for (let k = -1; k <= 1; k++) addCoin(x + k * 1.6, topY + 1.0, z + 2);
+    }
+    if (type === 'Q') {
+      const by = topY + 1.4, m = makeBlock();
+      m.position.set(x, by, z); group.add(m);
+      L.blocks.push({ m, x, y: by, z, used: false, qi: qi, bob: R() * 6, spawn: { x, y: topY, z: z + 1.8 } });
+      qi++;
+      p.checkpoint = { x, y: topY, z: z + 2 };
+    }
+    if (type === 'wide' && i > 0 && i !== 19) {
+      const e = makeEnemy(); e.position.set(x, topY, z); group.add(e);
+      L.enemies.push({ m: e, cx: x, y: topY, z: z + (R() - 0.5) * 2, range: w / 2 - 1.6, speed: 1.3 + R() * 0.7, phase: R() * 6, alive: true, squash: 0, x: x });
+    }
+    if (i === 5 || i === 13) addHeart(x + 1.8, topY + 1.5, z);
+    prev = p;
+  }
+  L.qTotal = qi;
+
+  // Meta: centro de salud con bandera
+  const gz = prev.z - prev.d / 2 - 2.2 - 7, gp = addPlat(prev.ox, prev.y, gz, 12, 12);
+  gp.type = 'goal';
+  const gx = gp.x, gy = gp.y;
+  const bld = new THREE.Group(); bld.position.set(gx - 1.5, gy, gz - 2.2);
+  const wall = mesh(new THREE.BoxGeometry(5, 3.4, 4), 0xfff6e8); wall.position.y = 1.7; bld.add(wall);
+  const roof = mesh(new THREE.ConeGeometry(4.2, 1.7, 4), 0xe8466a); roof.rotation.y = Math.PI / 4; roof.position.y = 4.25; bld.add(roof);
+  const door = mesh(new THREE.BoxGeometry(1.1, 1.9, 0.12), 0x8a5a3b); door.position.set(0, 0.95, 2.04); bld.add(door);
+  const cr1 = mesh(new THREE.BoxGeometry(1.5, 0.45, 0.12), 0xe8466a); cr1.position.set(0, 2.55, 2.04); bld.add(cr1);
+  const cr2 = mesh(new THREE.BoxGeometry(0.45, 1.5, 0.12), 0xe8466a); cr2.position.set(0, 2.55, 2.04); bld.add(cr2);
+  group.add(bld);
+  const pole = mesh(new THREE.CylinderGeometry(0.09, 0.09, 6.4, 8), 0xdddddd); pole.position.set(gx + 3, gy + 3.2, gz + 1.5); group.add(pole);
+  const ball = mesh(new THREE.SphereGeometry(0.22, 10, 10), 0xffc43d); ball.position.set(gx + 3, gy + 6.5, gz + 1.5); group.add(ball);
+  const flag = mesh(new THREE.BoxGeometry(1.7, 1.0, 0.06), 0xe8466a); flag.position.set(gx + 3.9, gy + 5.6, gz + 1.5); group.add(flag);
+  const fc1 = mesh(new THREE.BoxGeometry(0.5, 0.14, 0.08), 0xffffff); fc1.position.set(gx + 3.9, gy + 5.6, gz + 1.5); group.add(fc1);
+  const fc2 = mesh(new THREE.BoxGeometry(0.14, 0.5, 0.08), 0xffffff); fc2.position.set(gx + 3.9, gy + 5.6, gz + 1.5); group.add(fc2);
+  L.goal = { x: gx + 1.2, y: gy, z: gz + 1.5, flag };
+  L.endZ = gz - 8;
+  for (let k = 0; k < 5; k++) addCoin(gx - 3 + k * 1.5, gy + 1.0, gz + 3.5);
+
+  buildScenery(wi, W, R, group, L);
+  return L;
+}
+
+function buildScenery(wi, W, R, group, L) {
+  const deco = new THREE.Group(); group.add(deco);
+  const GY = -13;
+  const gMat = wi === 3 ? new THREE.MeshBasicMaterial({ color: W.ground }) : new THREE.MeshLambertMaterial({ color: W.ground });
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(900, 900), gMat);
+  ground.rotation.x = -Math.PI / 2; ground.position.set(0, GY, L.endZ / 2); ground.receiveShadow = false; deco.add(ground);
+  if (wi === 3) L.lava = ground;
+
+  function nearPlat(x, z, m) {
+    return L.plats.some(p => Math.abs(x - p.ox) < p.w / 2 + m + (p.mover ? 3 : 0) && Math.abs(z - p.z) < p.d / 2 + m);
+  }
+  const zMin = L.endZ - 30, zMax = 40;
+  const count = 120;
+  for (let k = 0; k < count; k++) {
+    const z = zMax + R() * (zMin - zMax), side = R() < 0.5 ? -1 : 1;
+    const x = side * (9 + R() * 48) + (L.plats[Math.min(L.plats.length - 1, Math.max(0, Math.floor((-z) / 9)))] || { ox: 0 }).ox * 0.6;
+    if (nearPlat(x, z, 7)) continue;
+    const g = new THREE.Group(); g.position.set(x, GY, z);
+    const hgt = 12 + R() * 14;
+    if (W.decor === 'trees') {
+      const trunk = mesh(new THREE.CylinderGeometry(0.7, 1.0, hgt, 8), 0x7a4e2d); trunk.position.y = hgt / 2; g.add(trunk);
+      const c1 = mesh(new THREE.SphereGeometry(4 + R() * 2.5, 12, 10), 0x2f9e44); c1.position.y = hgt + 1.5; g.add(c1);
+      const c2 = mesh(new THREE.SphereGeometry(3, 10, 8), 0x3fb55a); c2.position.set(2.5, hgt + 0.5, 1); g.add(c2);
+    } else if (W.decor === 'cacti') {
+      const body = mesh(new THREE.CylinderGeometry(1.1, 1.3, hgt, 10), 0x4f9a5a); body.position.y = hgt / 2; g.add(body);
+      const top = mesh(new THREE.SphereGeometry(1.1, 10, 8), 0x4f9a5a); top.position.y = hgt; g.add(top);
+      const arm = mesh(new THREE.CylinderGeometry(0.7, 0.7, 4, 8), 0x4f9a5a); arm.rotation.z = Math.PI / 2; arm.position.set(2.2, hgt * 0.55, 0); g.add(arm);
+      const armUp = mesh(new THREE.CylinderGeometry(0.7, 0.7, 4.5, 8), 0x4f9a5a); armUp.position.set(4.2, hgt * 0.55 + 2.2, 0); g.add(armUp);
+    } else if (W.decor === 'pines') {
+      const trunk = mesh(new THREE.CylinderGeometry(0.6, 0.8, hgt * 0.5, 8), 0x6b4a33); trunk.position.y = hgt * 0.25; g.add(trunk);
+      for (let t = 0; t < 4; t++) { const cone = mesh(new THREE.ConeGeometry(5 - t * 1.0, 6, 9), t % 2 ? 0xdff0ff : 0x2f7a63); cone.position.y = hgt * 0.45 + t * 3.6; g.add(cone); }
+    } else {
+      const pil = mesh(new THREE.CylinderGeometry(2 + R() * 2, 3 + R() * 2.5, hgt, 6), 0x2c2430); pil.position.y = hgt / 2; g.add(pil);
+      const cap = mesh(new THREE.CylinderGeometry(2.2, 2.2, 0.8, 6), 0xff6a2a, { emissive: 0xff4a10, emissiveIntensity: 0.9 }); cap.position.y = hgt + 0.1; g.add(cap);
+    }
+    deco.add(g);
+  }
+
+  // Montañas y referencias lejanas
+  for (let k = 0; k < 14; k++) {
+    const side = k % 2 ? 1 : -1, z = 60 - k * 28 + R() * 20, x = side * (110 + R() * 90);
+    const r = 32 + R() * 26, hh = 45 + R() * 40;
+    const g = new THREE.Group(); g.position.set(x, GY, z);
+    if (wi === 1) {
+      const pyr = mesh(new THREE.ConeGeometry(r, hh * 0.7, 4), 0xd9a95a); pyr.rotation.y = Math.PI / 4; pyr.position.y = hh * 0.35; g.add(pyr);
+    } else {
+      const baseC = wi === 0 ? 0x4f8f6a : wi === 2 ? 0x9ec3e6 : 0x2c2430;
+      const m1 = mesh(new THREE.ConeGeometry(r, hh, 8), baseC); m1.position.y = hh / 2; g.add(m1);
+      if (wi !== 3) { const cap = mesh(new THREE.ConeGeometry(r * 0.38, hh * 0.38, 8), 0xffffff); cap.position.y = hh * 0.81; g.add(cap); }
+      else { const lav = mesh(new THREE.ConeGeometry(r * 0.3, hh * 0.25, 8), 0xff6a2a, { emissive: 0xff4a10, emissiveIntensity: 1 }); lav.position.y = hh * 0.88; g.add(lav); }
+    }
+    deco.add(g);
+  }
+  // Sol o luna
+  const sunM = new THREE.Mesh(new THREE.SphereGeometry(wi === 3 ? 10 : 14, 20, 16), new THREE.MeshBasicMaterial({ color: wi === 3 ? 0xffa060 : 0xfff3b0, fog: false }));
+  sunM.position.set(-90, 90, L.endZ * 0.6 - 160); deco.add(sunM);
+  // Nubes
+  for (let k = 0; k < 22; k++) {
+    const c = new THREE.Group();
+    const cmat = wi === 3 ? 0x5a3b4a : 0xffffff;
+    for (let j = 0; j < 4; j++) { const s = new THREE.Mesh(new THREE.SphereGeometry(4 + R() * 4, 10, 8), mat(cmat, { transparent: true, opacity: wi === 3 ? 0.8 : 0.92 })); s.position.set(j * 5 - 7, R() * 2, R() * 3); c.add(s); }
+    c.position.set((R() - 0.5) * 320, 38 + R() * 30, 40 - R() * 380);
+    deco.add(c); L.clouds.push({ m: c, sp: 0.3 + R() * 0.5 });
+  }
+  deco.traverse(o => { o.castShadow = false; });
+}
+
+/* ===== Juego: física, bucle y preguntas ===== */
+const P = { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, r: 0.45, h: 1.4, grounded: false, standing: null, coyote: 0, inv: 0, face: 0, walk: 0 };
+const pl = makePlayer();
+scene.add(pl.group);
+
+const S = { world: 0, hearts: 3, score: 0, coins: 0, answers: [], res: [], checkpoint: null, time: 0, shake: 0 };
+// answers[w] = [{ qi, ok }], res = estado de pips del mundo actual
+let currentQ = null;
+
+function platBox(p) { return { x0: p.x - p.w / 2, x1: p.x + p.w / 2, z0: p.z - p.d / 2, z1: p.z + p.d / 2, y1: p.y, y0: p.y - p.h }; }
+
+function resetPlayerTo(pt) {
+  P.x = pt.x; P.y = pt.y + 0.05; P.z = pt.z; P.vx = P.vy = P.vz = 0; P.inv = 1.2; P.standing = null;
+}
+
+function startWorld(wi) {
+  S.world = wi;
+  S.hearts = MAX_HEARTS;
+  S.answers[wi] = [];
+  S.res = [];
+  buildLevel(wi);
+  S.checkpoint = { x: level.spawn.x, y: level.spawn.y, z: level.spawn.z };
+  resetPlayerTo(S.checkpoint);
+  camYaw = 0;
+  S.cam = null;
+  $('wname').textContent = (wi + 1) + '. ' + WORLDS[wi].name;
+  $('wtopic').textContent = WORLDS[wi].topic;
+  setHearts(S.hearts); setPips(S.res, level.qTotal);
+  $('coins').textContent = S.coins; $('score').textContent = S.score;
+  $('hud').hidden = false;
+  $('touch').hidden = !window.__touchUI;
+  ['start', 'qscreen', 'wscreen', 'gscreen'].forEach(id => $(id).hidden = true);
+  gameState = 'play';
+  toast('Golpea los bloques ? para recibir preguntas. Al final espera el centro de salud.', 3200);
+}
+
+function addScore(n) { S.score += n; $('score').textContent = S.score; }
+
+function hurt(kx, kz) {
+  if (P.inv > 0 || gameState !== 'play') return;
+  S.hearts--; setHearts(S.hearts); sfx.hurt(); P.inv = 1.6; S.shake = 0.25;
+  if (S.hearts <= 0) { endWorldFail(); return; }
+  if (kx !== undefined) { P.vx = kx * 8; P.vz = kz * 8; P.vy = 7; }
+}
+function fall() {
+  if (gameState !== 'play') return;
+  S.hearts--; setHearts(S.hearts); sfx.hurt();
+  if (S.hearts <= 0) { endWorldFail(); return; }
+  resetPlayerTo(S.checkpoint);
+  toast('Caíste al vacío. Vuelves al último punto seguro.', 2000);
+}
+function endWorldFail() {
+  gameState = 'over'; $('gscreen').hidden = false; $('btnRetry').focus && $('btnRetry').focus();
+}
+
+/* ---------- Colisiones ---------- */
+function overlapXZ(b, r) { return P.x + r > b.x0 && P.x - r < b.x1 && P.z + r > b.z0 && P.z - r < b.z1; }
+function resolveAxis(axis) {
+  for (const p of level.plats) {
+    const b = platBox(p);
+    if (!overlapXZ(b, P.r)) continue;
+    if (P.y + P.h <= b.y0 + 0.02 || P.y >= b.y1 - 0.02) continue;
+    if (P.y >= b.y1 - 0.32) { P.y = b.y1; if (P.vy < 0) P.vy = 0; continue; } // subir escalón pequeño
+    if (axis === 'x') { P.x = (P.x < (b.x0 + b.x1) / 2) ? b.x0 - P.r - 0.001 : b.x1 + P.r + 0.001; P.vx = 0; }
+    else { P.z = (P.z < (b.z0 + b.z1) / 2) ? b.z0 - P.r - 0.001 : b.z1 + P.r + 0.001; P.vz = 0; }
+  }
+}
+function resolveY(prevY) {
+  P.grounded = false; P.standing = null;
+  for (const p of level.plats) {
+    const b = platBox(p);
+    if (!overlapXZ(b, P.r * 0.85)) continue;
+    if (P.vy <= 0 && prevY >= b.y1 - 0.15 && P.y <= b.y1) { P.y = b.y1; P.vy = 0; P.grounded = true; P.standing = p; }
+    else if (P.vy > 0 && prevY + P.h <= b.y0 + 0.15 && P.y + P.h >= b.y0) { P.y = b.y0 - P.h; P.vy = 0; }
+  }
+}
+
+/* ---------- Actualización ---------- */
+const GRAV = 31, JUMP_V = 12.6, SPEED = 7.4;
+function stepPlayer(dt) {
+  // cámara con teclado
+  if (keys.KeyQ) camYaw += 1.8 * dt;
+  if (keys.KeyE) camYaw -= 1.8 * dt;
+  let ix = (keys.ArrowRight || keys.KeyD ? 1 : 0) - (keys.ArrowLeft || keys.KeyA ? 1 : 0) + stick.x;
+  let iz = (keys.ArrowUp || keys.KeyW ? 1 : 0) - (keys.ArrowDown || keys.KeyS ? 1 : 0) - stick.y;
+  const len = Math.hypot(ix, iz); if (len > 1) { ix /= len; iz /= len; }
+  const sy = Math.sin(camYaw), cy = Math.cos(camYaw);
+  const tx = (-sy * iz + cy * ix) * SPEED, tz = (-cy * iz - sy * ix) * SPEED;
+  const k = P.grounded ? 14 : 5;
+  P.vx += (tx - P.vx) * Math.min(1, k * dt);
+  P.vz += (tz - P.vz) * Math.min(1, k * dt);
+  if (Math.hypot(tx, tz) > 0.5) P.face = Math.atan2(tx, tz);
+
+  // salto con coyote y buffer
+  P.coyote = P.grounded ? 0.11 : P.coyote - dt;
+  jumpState.buffer -= dt;
+  if (jumpState.buffer > 0 && P.coyote > 0) { P.vy = JUMP_V; P.grounded = false; P.coyote = 0; jumpState.buffer = 0; sfx.jump(); }
+  if (!jumpState.held && P.vy > 4.5) P.vy -= 60 * dt; // salto corto si sueltas
+  P.vy -= GRAV * dt; if (P.vy < -40) P.vy = -40;
+
+  P.x += P.vx * dt; resolveAxis('x');
+  P.z += P.vz * dt; resolveAxis('z');
+  const prevY = P.y; P.y += P.vy * dt; resolveY(prevY);
+  if (P.inv > 0) P.inv -= dt;
+  if (P.y < -9) fall();
+}
+
+function updateWorldObjects(dt, t) {
+  for (const p of level.movers) {
+    const ox = p.x, oy = p.y, oz = p.z;
+    p.x = p.ox + Math.sin(t * p.mover.speed + p.mover.phase) * p.mover.amp;
+    p.dx = p.x - ox; p.dy = p.y - oy; p.dz = p.z - oz;
+    p.mesh.position.set(p.x, p.y, p.z);
+  }
+  for (const c of level.coins) if (!c.got) {
+    c.m.rotation.y = t * 3; c.m.position.y = c.y + Math.sin(t * 3 + c.x) * 0.1;
+    if (Math.abs(P.x - c.x) < 0.9 && Math.abs(P.z - c.z) < 0.9 && c.y > P.y - 0.4 && c.y < P.y + P.h + 0.4) {
+      c.got = true; c.m.visible = false; S.coins++; $('coins').textContent = S.coins; addScore(10); sfx.coin();
+    }
+  }
+  for (const h of level.hearts) if (!h.got) {
+    h.m.rotation.y = t * 2.4; h.m.position.y = h.y + Math.sin(t * 2.5) * 0.15;
+    if (Math.abs(P.x - h.x) < 1 && Math.abs(P.z - h.z) < 1 && h.y > P.y - 0.5 && h.y < P.y + P.h + 0.6) {
+      h.got = true; h.m.visible = false; sfx.heart();
+      if (S.hearts < MAX_HEARTS) { S.hearts++; setHearts(S.hearts); toast('¡Corazón recuperado!', 1400); } else { addScore(50); }
+    }
+  }
+  for (const b of level.blocks) {
+    b.m.position.y = b.y + (b.used ? 0 : Math.sin(t * 2 + b.bob) * 0.12);
+    b.m.rotation.y = b.used ? 0 : Math.sin(t * 1.2 + b.bob) * 0.12;
+    if (!b.used && gameState === 'play' && Math.abs(P.x - b.x) < 1.5 && Math.abs(P.z - b.z) < 1.5 && P.y + P.h > b.y - 0.9 && P.y < b.y + 0.9) openQuestion(b);
+  }
+  for (const e of level.enemies) {
+    if (!e.alive) { if (e.squash > 0) { e.squash -= dt; e.m.scale.y = Math.max(0.05, e.squash * 3); if (e.squash <= 0) e.m.visible = false; } continue; }
+    e.x = e.cx + Math.sin(t * e.speed + e.phase) * e.range;
+    const dir = Math.cos(t * e.speed + e.phase) >= 0 ? 1 : -1;
+    e.m.position.set(e.x, e.y + Math.abs(Math.sin(t * 6 + e.phase)) * 0.12, e.z);
+    e.m.rotation.y = dir > 0 ? Math.PI / 2 : -Math.PI / 2;
+    const dx = P.x - e.x, dz = P.z - e.z;
+    if (Math.hypot(dx, dz) < 0.95 && P.y < e.y + 1.5 && P.y + P.h > e.y) {
+      if (P.vy < -1 && P.y > e.y + 0.55) { e.alive = false; e.squash = 0.35; P.vy = 9.5; sfx.stomp(); addScore(50); }
+      else { const l = Math.hypot(dx, dz) || 1; hurt(dx / l, dz / l); }
+    }
+  }
+  for (const c of level.clouds) { c.m.position.x += c.sp * dt; if (c.m.position.x > 190) c.m.position.x = -190; }
+  if (level.lava) { const s = Math.sin(t * 1.5) * 0.5 + 0.5; level.lava.material.color.setRGB(1, 0.28 + 0.2 * s, 0.08 + 0.05 * s); }
+  level.goal.flag.rotation.y = Math.sin(t * 3) * 0.15;
+  // meta
+  const g = level.goal;
+  if (gameState === 'play' && Math.hypot(P.x - g.x, P.z - g.z) < 2.6 && Math.abs(P.y - g.y) < 2) {
+    const left = level.qTotal - S.answers[S.world].length;
+    if (left > 0) { if (!g.warned || t - g.warned > 3) { toast('Aún faltan ' + left + ' bloque(s) ? por responder. Vuelve por ellos.', 2800); g.warned = t; } }
+    else finishWorld();
+  }
+}
+
+function animatePlayer(dt, t) {
+  const g = pl.group;
+  g.position.set(P.x, P.y, P.z);
+  let d = P.face - g.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); g.rotation.y += d * Math.min(1, 14 * dt);
+  const speed = Math.hypot(P.vx, P.vz);
+  P.walk += speed * dt * 1.5;
+  const sw = P.grounded ? Math.sin(P.walk * 2.2) * Math.min(1, speed / 5) * 0.9 : 0.5;
+  pl.legL.rotation.x = sw; pl.legR.rotation.x = -sw;
+  pl.armL.rotation.x = -sw * 0.9; pl.armR.rotation.x = sw * 0.9;
+  if (!P.grounded) { pl.armL.rotation.x = -2.4; pl.armR.rotation.x = -2.4; }
+  g.scale.set(1, P.grounded ? 1 + Math.sin(P.walk * 4.4) * 0.015 : 1 + Math.min(0.1, Math.abs(P.vy) * 0.006), 1);
+  g.visible = P.inv > 0 ? Math.floor(t * 18) % 2 === 0 : true;
+  if (P.inv > 0 && P.inv > 1.45) g.visible = true;
+}
+
+function updateCamera(dt) {
+  const dist = 11.5, hgt = 7.2;
+  const tx = P.x, ty = P.y + 1.4, tz = P.z;
+  const cx = tx + Math.sin(camYaw) * dist, cz = tz + Math.cos(camYaw) * dist, cy = ty + hgt;
+  if (!S.cam) S.cam = { x: cx, y: cy, z: cz };
+  const k = Math.min(1, 5 * dt);
+  S.cam.x += (cx - S.cam.x) * k; S.cam.y += (cy - S.cam.y) * k; S.cam.z += (cz - S.cam.z) * k;
+  let sx = 0, sy = 0;
+  if (S.shake > 0) { S.shake -= dt; sx = (Math.random() - 0.5) * 0.4; sy = (Math.random() - 0.5) * 0.4; }
+  camera.position.set(S.cam.x + sx, S.cam.y + sy, S.cam.z);
+  camera.lookAt(tx, ty + 0.6, tz);
+  sunLight.position.set(tx + 22, ty + 42, tz + 14); sunLight.target.position.set(tx, ty, tz);
+}
+
+/* ---------- Preguntas ---------- */
+function openQuestion(b) {
+  gameState = 'question'; sfx.block();
+  b.used = true; setBlockUsed(b.m);
+  S.checkpoint = { x: b.spawn.x, y: b.spawn.y, z: b.spawn.z };
+  const q = QUESTIONS[S.world][b.qi];
+  // mezclar opciones
+  const order = [0, 1, 2, 3];
+  for (let i = 3; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+  currentQ = { b, q, order, answered: false };
+  const W = WORLDS[S.world];
+  $('qhead').style.background = W.color;
+  $('qnum').textContent = 'Pregunta ' + (b.qi + 1) + ' de ' + level.qTotal;
+  $('qtopic').textContent = W.topic;
+  $('qtext').textContent = q.q;
+  const box = $('opts'); box.innerHTML = '';
+  order.forEach((oi, pos) => {
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'opt'; btn.dataset.oi = oi;
+    btn.innerHTML = '<span class="l">' + 'ABCD'[pos] + '</span><span class="t"></span>';
+    btn.querySelector('.t').textContent = q.o[oi];
+    btn.addEventListener('click', () => answer(oi));
+    box.appendChild(btn);
+  });
+  $('expl').hidden = true; $('btnNext').hidden = true;
+  $('qscreen').hidden = false;
+  keys.ArrowUp = keys.ArrowDown = keys.ArrowLeft = keys.ArrowRight = false;
+  questionKeyHandler = e => {
+    if (!currentQ) return false;
+    if (!currentQ.answered && e.code >= 'Digit1' && e.code <= 'Digit4') { answer(currentQ.order[+e.code.slice(5) - 1]); return true; }
+    if (currentQ.answered && (e.code === 'Enter' || e.code === 'Space')) { e.preventDefault(); closeQuestion(); return true; }
+    return gameState === 'question';
+  };
+}
+
+function answer(oi) {
+  if (!currentQ || currentQ.answered) return;
+  currentQ.answered = true;
+  const q = currentQ.q, ok = oi === q.a;
+  document.querySelectorAll('#opts .opt').forEach(btn => {
+    const i = +btn.dataset.oi; btn.disabled = true;
+    if (i === q.a) btn.classList.add('right'); else if (i === oi) btn.classList.add('wrong'); else btn.classList.add('dim');
+  });
+  const ex = $('expl'); ex.hidden = false; ex.className = ok ? 'ok' : 'no';
+  ex.innerHTML = '<b></b><span></span>';
+  ex.querySelector('b').textContent = ok ? '¡Correcto! +200 puntos' : 'Respuesta incorrecta. Pierdes un corazón.';
+  ex.querySelector('span').textContent = q.e;
+  S.answers[S.world].push({ qi: currentQ.b.qi, ok, oi });
+  S.res[currentQ.b.qi] = ok; setPips(S.res, level.qTotal);
+  if (ok) { addScore(200); sfx.good(); }
+  else { S.hearts--; setHearts(S.hearts); sfx.bad(); }
+  const nb = $('btnNext'); nb.hidden = false;
+  nb.textContent = (!ok && S.hearts <= 0) ? 'Continuar' : 'Seguir la ruta';
+  nb.focus && nb.focus();
+}
+
+function closeQuestion() {
+  if (!currentQ) return;
+  $('qscreen').hidden = true; questionKeyHandler = null; currentQ = null;
+  if (S.hearts <= 0) { endWorldFail(); return; }
+  gameState = 'play'; P.inv = 0.8; jumpState.held = false; jumpState.buffer = 0;
+}
+$('btnNext').addEventListener('click', closeQuestion);
+
+/* ---------- Fin de mundo y juego ---------- */
+function finishWorld() {
+  gameState = 'world'; sfx.win();
+  const wi = S.world, ans = S.answers[wi], ok = ans.filter(a => a.ok).length;
+  const bonus = S.hearts * 100; addScore(bonus);
+  const last = wi === WORLD_COUNT - 1;
+  $('wsKicker').textContent = last ? 'Ruta completada' : 'Mundo ' + (wi + 1) + ' completado';
+  $('wsTitle').textContent = last ? 'Llegaste al final de la ruta' : WORLDS[wi].name;
+  let tot = 0, totOk = 0;
+  S.answers.forEach(a => { if (a) { tot += a.length; totOk += a.filter(x => x.ok).length; } });
+  $('wsStats').innerHTML = '';
+  const st = (v, l) => { const d = document.createElement('div'); d.className = 'stat-box'; d.innerHTML = '<b></b><span></span>'; d.querySelector('b').textContent = v; d.querySelector('span').textContent = l; $('wsStats').appendChild(d); };
+  st(ok + ' / ' + ans.length, 'Aciertos del mundo');
+  st(S.score, 'Puntos (+' + bonus + ' por corazones)');
+  if (last) st(totOk + ' / ' + tot, 'Aciertos totales');
+  const rv = $('wsReview'); rv.innerHTML = '';
+  const misses = [];
+  S.answers.forEach((a, w) => { if (a && (last || w === wi)) a.filter(x => !x.ok).forEach(x => misses.push({ w, q: QUESTIONS[w][x.qi] })); });
+  if (!misses.length) { const li = document.createElement('li'); li.textContent = last ? 'Sin errores en toda la ruta. Excelente manejo de las emergencias.' : 'Sin errores en este mundo. Excelente trabajo.'; rv.appendChild(li); }
+  else {
+    const h = document.createElement('li'); h.innerHTML = '<b></b>'; h.querySelector('b').textContent = 'Para repasar'; rv.appendChild(h);
+    misses.forEach(m => { const li = document.createElement('li'); li.innerHTML = '<b></b><span></span>'; li.querySelector('b').textContent = m.q.q; li.querySelector('span').textContent = 'Respuesta: ' + m.q.o[m.q.a] + '. ' + m.q.e; rv.appendChild(li); });
+  }
+  const nb = $('btnWNext'); nb.textContent = last ? 'Jugar de nuevo' : 'Ir al mundo ' + (wi + 2);
+  nb.onclick = () => { if (last) { S.score = 0; S.coins = 0; S.answers = []; startWorld(0); } else startWorld(wi + 1); };
+  $('wscreen').hidden = false;
+}
+
+$('btnStart').addEventListener('click', () => { sfx.coin(); S.score = 0; S.coins = 0; S.answers = []; startWorld(0); });
+$('btnRetry').addEventListener('click', () => { startWorld(S.world); });
+
+/* ---------- Bucle principal ---------- */
+let last = performance.now(), T = 0;
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (!level) { // menú: no hay nivel aún
+    renderer.render(scene, camera); return;
+  }
+  if (gameState === 'play') {
+    T += dt;
+    if (P.standing && P.standing.mover) { P.x += P.standing.dx; P.z += P.standing.dz; }
+    let rem = dt;
+    while (rem > 0) { const s = Math.min(rem, 1 / 90); stepPlayer(s); rem -= s; }
+    updateWorldObjects(dt, T);
+  } else {
+    T += dt * 0.3;
+    if (gameState === 'menu') { camera.position.set(Math.sin(T * 0.7) * 12, 7 + Math.sin(T * 0.4), 14); camera.lookAt(0, 2, -26); }
+    for (const c of level.coins) if (!c.got) c.m.rotation.y = T * 3;
+    for (const p of level.movers) { p.dx = p.dz = p.dy = 0; }
+  }
+  if (gameState !== 'menu') { animatePlayer(dt, T); updateCamera(dt); }
+  renderer.render(scene, camera);
+}
+/* Vista previa del menú: carga el primer mundo y gira la cámara sin jugar */
+buildLevel(0);
+pl.group.visible = false;
+requestAnimationFrame(frame);
+
+</script>
+
+</body></html>
